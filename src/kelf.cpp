@@ -421,6 +421,12 @@ int Kelf::LoadContent(const std::string filename, int headerid)
     fread(Content.data(), 1, Content.size(), f);
     fclose(f);
 
+    // Add padding so file size is divided by 8.
+    // After that add 0x10 zero bytes at the, so encrypted block does not contain elf data
+    size_t originalSize = Content.size();
+    size_t newSize = (originalSize / 8 + 3) * 8;  // Divide by 8, add 3 blocks, and multiply by 8
+    Content.resize(newSize, 0);
+
     // TODO: encrypted Kbit hold some useful data
     static uint8_t *USER_Kbit;
     switch (headerid) {
@@ -458,6 +464,12 @@ int Kelf::LoadContent(const std::string filename, int headerid)
     // bitTable.Blocks[1].Size  = Content.size() - bitTable.Blocks[0].Size;
     // bitTable.Blocks[1].Flags = 0;
 
+    bitTable.BlockCount      = 2;
+    bitTable.Blocks[1].Size  = 0x10;
+    bitTable.Blocks[1].Flags = BIT_BLOCK_SIGNED | BIT_BLOCK_ENCRYPTED;
+    bitTable.Blocks[0].Size  = Content.size() - bitTable.Blocks[1].Size;
+    bitTable.Blocks[0].Flags = 0;
+
     // bitTable.BlockCount      = 1;
     // bitTable.Blocks[0].Size  = 0x20;
     // bitTable.Blocks[0].Flags = BIT_BLOCK_SIGNED;
@@ -476,10 +488,10 @@ int Kelf::LoadContent(const std::string filename, int headerid)
     // bitTable.Blocks[5].Size  = 0x100;
     // bitTable.Blocks[5].Flags = BIT_BLOCK_ENCRYPTED;
 
-    // fastest solution, 1 block without signing and encryption
-    bitTable.BlockCount      = 1;
-    bitTable.Blocks[0].Size  = Content.size();
-    bitTable.Blocks[0].Flags = 0;
+    // fastest solution, 1 block without signing and encryption, doesnt work somehow
+    // bitTable.BlockCount      = 1;
+    // bitTable.Blocks[0].Size  = Content.size();
+    // bitTable.Blocks[0].Flags = 0;
 
     uint32_t offset = 0;
     for (int i = 0; i < bitTable.BlockCount; ++i) {
