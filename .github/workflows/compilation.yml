@@ -16,7 +16,7 @@ jobs:
       - name: Setup msbuild
         uses: microsoft/setup-msbuild@v1.1
 
-      - run: choco install --no-progress --forceX86 openssl
+      - run: choco install openssl --version=1.1.1.2100
 
       - name: Build
         run: msbuild /p:Configuration=Release
